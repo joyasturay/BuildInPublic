@@ -1,10 +1,10 @@
-// app/api/sessions/route.ts
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/db";
 import slugify from "slugify";
 import { getCurrentUser } from "@/auth";
 import { rollbar } from "@/rollbar";
+import { checkRateLimit } from "@/rate-limit";
 
 const bodySchema = z.object({
   title: z.string().min(3),
@@ -36,6 +36,15 @@ export async function POST(req: Request) {
   }
 
   const { title, description, tags = [] } = parsed.data;
+  const key=`user:${user.id}`
+  const rateLimit=await checkRateLimit(key)
+  if(!rateLimit.ok){
+    rollbar.warning("Rate limit exceeded for session creation", { userId: user.id, count: rateLimit.count });
+    return NextResponse.json({
+      message: "Rate limit exceeded: too many session creations. Try again later.",
+      retryAfter: rateLimit.resetIn,
+    }, { status: 429 });
+  }
 
   const existing = await prisma.session.findFirst({ where: { creatorId: user.id, isLive: true } });
   if (existing) {
