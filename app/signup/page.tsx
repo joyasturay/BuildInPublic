@@ -20,7 +20,7 @@ export default function signup(){
         const res=await axios.post("/api/auth/signup",form,{
             headers:{ "Content-Type": "application/json"}
         })
-        const data=await res.data
+        const data= res.data
         if(!data)throw new Error(data.error || "signup failed")
             router.push("/dashboard")
        }catch(e:any){
