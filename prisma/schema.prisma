@@ -18,6 +18,8 @@ model User{
   username String @unique
   email String @unique
    password String
+   bio String? @default("")
+   profilepic String? @default("") 
    sessions Session[]
    followers Follow[] @relation("followers")
    following Follow[] @relation("following")

@@ -1,22 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
 
-export default  function dashboard() {
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+import useRequireAuth from "../hooks/useRequireAuth";
 
-  useEffect(() => {
-    fetch("/api/me", { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.user) setUser(data.user);
-        else window.location.href = "/login";
-      })
-      .finally(() => setLoading(false));
-  }, []);
+export default function DashboardPage() {
+  const { user, loading } = useRequireAuth();
 
   if (loading) return <p className="text-center text-white mt-20">Loading...</p>;
-
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center">
       <h1 className="text-3xl font-bold">Hey {user?.username || "Dev"} 👋</h1>
