@@ -43,7 +43,7 @@ export default function ProfilePage() {
           setForm({ username: u.username || "", bio: u.bio || "" });
         }
 
-        // server returns `profilepic` (lowercase) so read that
+      
         const pic = u.profilepic ?? null;
         if (mounted) setProfilePic(pic);
       } catch (err) {
@@ -79,18 +79,16 @@ export default function ProfilePage() {
 
       console.log("Uploaded file path:", filePath, "uploadData:", uploadData);
 
-      // try to get public URL through SDK
+     
       const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
       let finalUrl = urlData?.publicUrl ?? null;
 
-      // If getPublicUrl returned nothing (or you're using a private bucket), fall back
-      // to building the standard public URL — this works for public buckets.
+     
       if (!finalUrl) {
         if (!SUPABASE_URL) {
           console.warn("NEXT_PUBLIC_SUPABASE_URL not set — cannot build fallback URL");
         } else {
-          // Construct the public URL pattern used by Supabase for public buckets:
-          // https://<project>.supabase.co/storage/v1/object/public/<bucket>/<path>
+         
           finalUrl = `${SUPABASE_URL.replace(/\/$/, "")}/storage/v1/object/public/${BUCKET}/${encodeURIComponent(
             filePath
           )}`;
@@ -98,13 +96,13 @@ export default function ProfilePage() {
       }
 
       if (!finalUrl) {
-        // We can't create signed URLs from client — inform the user
+      
         throw new Error(
           "Could not determine a public URL for the uploaded file. If your bucket is private, configure server-side signed URLs."
         );
       }
 
-      // Send the finalUrl as `profilepic` to your server (your POST handler expects profilepic)
+     
       const updateRes = await fetch("/api/users/update", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -120,10 +118,10 @@ export default function ProfilePage() {
         if (!updateRes.ok) {
           throw new Error(JSON.stringify(json));
         }
-        // server returns updated user object — use that profilepic if present
+       
         const savedUrl: string | undefined = json.user?.profilepic ?? finalUrl;
         setProfilePic(savedUrl ?? finalUrl);
-        // update local user object too
+       
         setUser((prev) => (prev ? { ...prev, profilepic: savedUrl ?? finalUrl } : prev));
       } else {
         const text = await updateRes.text();
@@ -153,10 +151,10 @@ export default function ProfilePage() {
       if (ct.includes("application/json")) {
         const json = await res.json();
         if (!res.ok) throw new Error(JSON.stringify(json));
-        // update local user state from returned user (if provided)
+       
         const updatedUser = json.user;
         setUser((prev) => (prev ? { ...prev, ...updatedUser } : prev));
-        // If server returned profilepic, update UI
+       
         if (updatedUser?.profilepic) setProfilePic(updatedUser.profilepic);
         alert("Profile updated!");
       } else {
