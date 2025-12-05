@@ -2,6 +2,7 @@
 import {useEffect,useRef,useState} from "react"
 import axios from "axios"
 import { supabase } from "@/supabase"
+import { object } from "zod"
 type chatMessage={
     id?:string;
     userId:string;
@@ -29,12 +30,57 @@ export function useSessionRealtime(sessionid?:string){
                 userRef.current={id:data.user.id,username:data.user.username}
             }
         }catch(e){
-       console.log(e) 
+       alert(String(e)) 
     }
     connect()
     })()
     function connect(){
-        
+        const presenceKey=userRef.current?.id ?? anonIdRef.current;
+        const channel=supabase.channel(`session-${sessionid}`,{
+          config:{
+            presence:{
+              key:presenceKey !
+            }
+          }
+        })
+        channel.on("broadcast",{event:"chat-meesage"},(payload)=>{
+          const msg=payload.payload as chatMessage
+          setMessages((m)=>[...m,msg])
+        })
+        channel.on("broadcast", { event: "viewer-join" }, (payload) => {
+        // optional: show join notifications
+      });
+        channel.on("presence",{event:"sync"},()=>{
+          try{
+            const state=channel.presenceState()
+            const count=Object.keys(state).length
+            setViewers(count)
+          }catch(e:any){
+            alert(String(e));
+          }
+        })
+          channel.subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          setConnected(true);
+          const user = userRef.current;
+          channel.send({
+            type: "broadcast",
+            event: "viewer-join",
+            payload: { userId: user?.id, username: user?.username },
+          });
+        }
+      });
+
+      channelRef.current = channel;
     }
-  },[])
+    return()=>{
+      mounted=false;
+      if(channelRef.current){
+        try{
+          channelRef.current.unsubscribe()
+        }catch{}
+        channelRef.current=null;
+      }
+    }
+  },[sessionid])
 }
